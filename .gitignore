@@ -106,3 +106,4 @@ autom4te.cache/
 *.m4
 configure
 *~
+/test-driver
