@@ -1,6 +1,7 @@
 #include "arg.h"
 #include "file.h"
 #include "libcommon.h"
+#include "plotter.h"
 #include "sys-defines.h"
 
 const char *optstring = "-BCHOQVstE:F:f:g:h:k:K:I:l:L:m:N:q:R:r:T:u:w:W:X:Y:a:"
@@ -42,6 +43,7 @@ struct option long_options[] = {
   { "y-label", ARG_REQUIRED, NULL, 'Y' },
   { "y-limits", ARG_OPTIONAL, NULL, 'y' }, /* 0, 1, 2, or 3 */
   /* Long options with no equivalent short option alias */
+  { "legend-position", ARG_REQUIRED, NULL, 'L' << 8 },
   { "bg-color", ARG_REQUIRED, NULL, 'q' << 8 },
   { "bitmap-size", ARG_REQUIRED, NULL, 'B' << 8 },
   { "blankout", ARG_REQUIRED, NULL, 'b' << 8 },
@@ -107,6 +109,7 @@ ARG_LIST arg_list = {
   .transpose_axes = false,
   .multigrapher = NULL,
   .output_format = "meta",
+  .legend_plot = false,
   .bg_color = NULL,
   .bitmap_size = NULL,
   .emulate_color = NULL,
@@ -177,7 +180,7 @@ ARG_LIST arg_list = {
 };
 
 int
-get_args (int argc, char *argv[])
+parse_args (int argc, char *argv[])
 {
   while (arg_list.continue_parse)
     {
@@ -685,6 +688,10 @@ ARG REQUIRED */
                        progname, optarg);
             }
           break;
+        case 'L' << 8:
+          arg_list.legend_plot = true;
+          arg_list.legend_position = optarg[0];
+          break;
         case 'q' << 8: /* Background color, ARG REQUIRED      */
           arg_list.bg_color = xstrdup (optarg);
           break;
@@ -940,95 +947,11 @@ ARG REQUIRED */
                    on the display.  Instead, we have a points array and we
                    need to plot it, after computing bounds. */
                 {
-                  /* fill in any of min_? and max_? that user didn't
-                         specify (the prefix "final_" means these arguments
-                         were finalized at the time the first file of the plot
-                         was processed) */
-                  array_bounds (
-                      arg_list.p, arg_list.no_of_points,
-                      arg_list.final_transpose_axes, arg_list.clip_mode,
-                      &arg_list.final_min_x, &arg_list.final_min_y,
-                      &arg_list.final_max_x, &arg_list.final_max_y,
-                      arg_list.final_spec_min_x, arg_list.final_spec_min_y,
-                      arg_list.final_spec_max_x, arg_list.final_spec_max_y);
-
-                  if (arg_list.first_graph_of_multigraph)
-                    /* haven't created multigrapher yet, do so now */
-                    {
-                      if ((arg_list.multigrapher = new_multigrapher (
-                               arg_list.output_format, arg_list.bg_color,
-                               arg_list.bitmap_size, arg_list.emulate_color,
-                               arg_list.max_line_length,
-                               arg_list.meta_portable, arg_list.page_size,
-                               arg_list.rotation_angle, arg_list.save_screen))
-                          == NULL)
-                        {
-                          fprintf (stderr,
-                                   "%s: error: the graphing device could not "
-                                   "be opened\n",
-                                   progname);
-                          return EXIT_FAILURE;
-                        }
-                    }
-
-                  /* begin graph: push new libplot drawing state onto stack
-                         of states; also concatenate the current transformation
-                         matrix with a matrix formed from the repositioning
-                         parameters (this will be in effect for duration of the
-                         graph) */
-                  begin_graph (arg_list.multigrapher,
-                               arg_list.old_reposition_scale,
-                               arg_list.old_reposition_trans_x,
-                               arg_list.old_reposition_trans_y);
-
-                  /* font selection, saves typing */
-                  if ((arg_list.title_font_name == NULL)
-                      && (arg_list.font_name != NULL))
-                    arg_list.title_font_name = arg_list.font_name;
-
-                  /* initialize, using (in part) finalized arguments */
-                  set_graph_parameters (
-                      arg_list.multigrapher, arg_list.frame_line_width,
-                      arg_list.frame_color, arg_list.top_label,
-                      arg_list.title_font_name,
-                      arg_list.title_font_size, /* for title */
-                      arg_list.tick_size, arg_list.grid_spec,
-                      arg_list.final_min_x, arg_list.final_max_x,
-                      arg_list.final_spacing_x, arg_list.final_min_y,
-                      arg_list.final_max_y, arg_list.final_spacing_y,
-                      arg_list.final_spec_spacing_x,
-                      arg_list.final_spec_spacing_y, arg_list.plot_width,
-                      arg_list.plot_height, arg_list.margin_below,
-                      arg_list.margin_left, arg_list.font_name,
-                      arg_list.font_size, /* for abs. label */
-                      arg_list.x_label, arg_list.font_name,
-                      arg_list.font_size, /* for ord. label */
-                      arg_list.y_label, arg_list.no_rotate_y_label,
-                      /* these args are portmanteaux */
-                      arg_list.final_log_axis,
-                      arg_list.final_round_to_next_tick,
-                      arg_list.switch_axis_end, arg_list.omit_ticks,
-                      /* more args */
-                      arg_list.clip_mode, arg_list.blankout_fraction,
-                      arg_list.final_transpose_axes);
-
-                  /* draw the graph frame (grid, ticks, etc.); draw a
-                         `canvas' (a background opaque white rectangle) only if
-                         this isn't the first graph */
-                  draw_frame_of_graph (
-                      arg_list.multigrapher,
-                      (arg_list.first_graph_of_multigraph ? false : true));
-
-                  /* plot the laboriously read-in array */
-                  plot_point_array (arg_list.multigrapher, arg_list.p,
-                                    arg_list.no_of_points);
-
-                  /* free points array */
-                  free (arg_list.p);
-                  arg_list.no_of_points = 0;
+                  if (plot_graph_no_filter (&arg_list) == EXIT_FAILURE)
+                    return EXIT_FAILURE;
                   arg_list.first_file_of_graph = false;
-
-                } /* end of not-filter case */
+                }
+              /* end of not-filter case */
 
               /* draw graph frame on top of graph, if user requested it */
               if (arg_list.frame_on_top)
@@ -1195,7 +1118,8 @@ ARG REQUIRED */
                                arg_list.bitmap_size, arg_list.emulate_color,
                                arg_list.max_line_length,
                                arg_list.meta_portable, arg_list.page_size,
-                               arg_list.rotation_angle, arg_list.save_screen))
+                               arg_list.rotation_angle, arg_list.save_screen,
+                               arg_list.legend_plot))
                           == NULL)
                         {
                           fprintf (stderr,
@@ -1245,7 +1169,8 @@ ARG REQUIRED */
                       arg_list.switch_axis_end, arg_list.omit_ticks,
                       /* more args */
                       arg_list.clip_mode, arg_list.blankout_fraction,
-                      arg_list.final_transpose_axes);
+                      arg_list.final_transpose_axes, arg_list.legend_position,
+                      arg_list.legend_plot);
 
                   /* draw the graph frame (grid, ticks, etc.); draw a
                          `canvas' (a background opaque white rectangle) only if
@@ -1445,4 +1370,45 @@ parse_pen_string (const char *pen_s)
       colorstyle[pen_num - 1] = xstrdup (name);
     }
   return true;
+}
+
+int
+show_args ()
+{
+  if (arg_list.errcnt > 0)
+    {
+      fprintf (stderr, "Try `%s --help' for more information\n", progname);
+      return EXIT_FAILURE;
+    }
+  if (arg_list.show_version)
+    {
+      display_version (progname, written, copyright);
+      return EXIT_SUCCESS;
+    }
+  if (arg_list.do_list_fonts)
+    {
+      int success;
+
+      success = list_fonts (arg_list.output_format, progname);
+      if (success)
+        return EXIT_SUCCESS;
+      else
+        return EXIT_FAILURE;
+    }
+  if (arg_list.show_fonts)
+    {
+      int success;
+
+      success = display_fonts (arg_list.output_format, progname);
+      if (success)
+        return EXIT_SUCCESS;
+      else
+        return EXIT_FAILURE;
+    }
+  if (arg_list.show_usage)
+    {
+      display_usage (progname, hidden_options, usage_appendage, 2);
+      return EXIT_SUCCESS;
+    }
+  return EXIT_SUCCESS;
 }

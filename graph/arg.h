@@ -165,6 +165,9 @@ typedef struct
   double old_reposition_trans_x, old_reposition_trans_y;
   double old_reposition_scale;
 
+  bool legend_plot;
+  char legend_position;
+
   /* sui generis */
   bool frame_on_top;
 
@@ -172,5 +175,6 @@ typedef struct
 
 extern ARG_LIST arg_list;
 
-int get_args (int argc, char *argv[]);
+int parse_args (int argc, char *argv[]);
+int show_args ();
 bool parse_pen_string (const char *pen_s);

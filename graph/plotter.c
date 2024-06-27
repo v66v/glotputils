@@ -1,351 +1,6 @@
-/* This file is part of the GNU plotutils package.  Copyright (C) 1989,
-   1990, 1991, 1995, 1996, 1997, 1998, 1999, 2000, 2005, 2008, Free
-   Software Foundation, Inc.
+#include "plotter.h"
 
-   The GNU plotutils package is free software.  You may redistribute it
-   and/or modify it under the terms of the GNU General Public License as
-   published by the Free Software foundation; either version 2, or (at your
-   option) any later version.
-
-   The GNU plotutils package is distributed in the hope that it will be
-   useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   General Public License for more details.
-
-   You should have received a copy of the GNU General Public License along
-   with the GNU plotutils package; see the file COPYING.  If not, write to
-   the Free Software Foundation, Inc., 51 Franklin St., Fifth Floor,
-   Boston, MA 02110-1301, USA. */
-
-/* This file contains the point plotter half of GNU graph.  The point
-   plotter could easily be linked with other software.  It translates a
-   sequence of points, regarded as defining a polyline or a sequence of
-   polylines, to a sequence of libplot calls.  There is support for
-   multigraphing, i.e. producing a plot consisting of more than a single
-   graph.  Each graph may be drawn from more than one file, i.e., input
-   stream, and each input stream may provide more than a single polyline.
-
-   A `point' is a structure.  Each point structure contains the following
-   fields:
-
-      x and y coordinates of the point
-      a `have_x_errorbar' flag (true or false)
-      a `have_y_errorbar' flag (true or false)
-      xmin and xmax (meaningful only if have_x_errorbar is set)
-      ymin and ymax (meaningful only if have_y_errorbar is set)
-      a `pendown' flag
-
-      a symbol type (a small integer, interpreted as a marker type)
-      a symbol size (a fraction of the size of the plotting box)
-      a symbol font name (relevant only for symbol types >= 32)
-      a linemode (a small integer)
-      a linewidth (a fraction of the size of the display device)
-      a polyline fill-fraction (in the interval [0,1], <0 means no fill)
-      a use_color flag (true or false)
-
-   The point plotter constructs a polyline from each successive run of
-   points that have the pendown flag set.  It assumes that the final seven
-   fields are assumed to be the same for each point in such a run, i.e., it
-   takes their values from the first point of the run.  At the location of
-   each point on the polyline, the appropriate marker symbol, if any, will
-   be plotted.  Symbol types greater than or equal to 32 are interpreted as
-   single characters to be plotted, rather than symbols.
-
-   Points without the pendown flag set cause the polyline to be broken, and
-   a new one to begin, before the symbol (if any) is plotted.
-
-   The plotter supports five basic linemodes: 1 through 5.  The
-   interpretation of `linemode' depends on the polyline's use_color flag.
-
-           linemode		If monochrome 		If color
-
-               1		solid			red
-               2		dotted			green
-               3		dotdashed		blue
-               4		shortdashed		magenta
-               5		longdashed		cyan
-
-   In the monochrome case, the pattern simply repeats: 6,7,8,9,10 are
-   equivalent to 1,2,3,4,5, etc.  In the colored case, the sequence of
-   colors also repeats.  But linemodes 1,2,3,4,5 are drawn solid, while
-   6,7,8,9,10 are drawn dotted, 11,12,13,14,15 are drawn dotdashed, etc.
-   So there are 25 distinct colored linemodes, and 5 distinct monochrome
-   (black) ones.
-
-   The color of a symbol will be the same as the color of the polyline on
-   which it is plotted.
-
-   linemodes -1, -2, etc. have a special interpretation.  They are
-   `disconnected' linemodes: no polyline will appear, but if color is
-   being used, the color of the plotted symbols (if any) will be
-   linemode-dependent.  -1,-2,-3,-4,5 signify red,green,blue,magenta,cyan
-   (the same sequence as for 1,2,3,4,5); thereafter the sequence repeats.
-
-   linemode 0 is special (for backward compatibility).  No line is drawn;
-   symbol #1 (a point) will be used.  So using linemode 0 is the same as
-   using linemode -1, symbol 1.
-
-   The point plotter is invoked by calling the following, in order.
-
-   new_multigrapher() creates a new point plotter.
-   begin_graph()
-   set_graph_parameters() initializes global structures used by
-        the draw_frame_of_graph() and plot_point() routines.  These include
-        the structures that specify the linear transformation from user
-        coordinates to the coordinates used by libplot, and structures
-        that specify the style of the plot frame.
-   draw_frame_of_graph() plots the graph frame.  [Optional.]
-   plot_point() uses libplot routines to plot a single point, together
-        with (possibly)	a line extending to it from the last point, and
-        a symbol. [Alternatively, plot_point_array() can be used, to plot
-        an array of points.]
-   end_graph()
-   ..
-   [The begin_graph()..end_graph() block can be repeated indefinitely
-    if desired, to create a multigraph.  set_graph_parameters() allows
-    for repositioning of later graphs.]
-   ..
-   delete_multigrapher() deletes the point plotter.
-
-   There is also a function end_polyline_and_flush(), which is useful for
-   real-time display. */
-
-#include "extern.h"
-#include "libcommon.h"
-#include "plot.h"
-#include "sys-defines.h"
-/* #include <string.h> */
-
-/* we use floating point libplot coordinates in the range [0,PLOT_SIZE] */
-#define PLOT_SIZE 4096.0
-
-#define FUZZ 0.000001 /* bd. on floating pt. roundoff error */
-
-#define NEAR_EQUALITY(a, b, scale) (fabs ((a) - (b)) < (FUZZ * fabs (scale)))
-
-typedef unsigned int outcode; /* for Cohen-Sutherland clipper */
-enum
-{
-  TOP = 0x1,
-  BOTTOM = 0x2,
-  RIGHT = 0x4,
-  LEFT = 0x8
-};
-enum
-{
-  ACCEPTED = 0x1,
-  CLIPPED_FIRST = 0x2,
-  CLIPPED_SECOND = 0x4
-};
-
-#define TRIAL_NUMBER_OF_TICK_INTERVALS 5
-#define MAX_NUM_SUBTICKS 29       /* max num. of linearly spaced subticks */
-#define RELATIVE_SUBTICK_SIZE 0.4 /* subtick_size / tick_size */
-/* if a log axis spans >5.0 orders of magnitude, don't plot log subsubticks */
-#define MAX_DECADES_WITH_LOG_SUBSUBTICKS 5.0
-
-/* inter-tick spacing types, returned by scale1() and spacing_type() */
-#define S_ONE 0
-#define S_TWO 1
-#define S_FIVE 2
-#define S_TWO_FIVE 3 /* we don't use this one, but user may request it */
-#define S_UNKNOWN -2
-
-/* valid graph axis layout types; A_LOG2, anyone? */
-#define A_LINEAR 0
-#define A_LOG10 1
-
-/* The x_trans and y_trans elements of a Multigrapher specify the current
-   linear transformation from user coordinates to device coordinates.  They
-   are used both in the plotting of a graph frame, and in the plotting of
-   data points within a graph. */
-
-typedef struct
-{
-  /* Input (user) coordinates, all floating point.  These are the
-     coordinates used in the original data points (or their base-10 logs,
-     for an axis of log type).  We'll map them to the unit interval
-     [0.0,1.0]. */
-  double input_min, input_max; /* min, max */
-  double input_range;          /* max - min, precomputed for speed */
-  /* If we're reversing axes, we'll then map [0.0,1.0] to [1.0,0.0] */
-  bool reverse;
-  /* We'll map [0.0,1.0] to another (smaller) interval, linearly */
-  double squeezed_min, squeezed_max; /* min, max */
-  double squeezed_range;             /* max - min */
-  /* Output [i.e., libplot] coordinates.  The interval [0.0,1.0] will be
-     mapped to this range, and the squeezed interval to a sub-range.  This
-     is so that the box within which points are plotted will be smaller
-     than the full area of the graphics display. */
-  double output_min, output_max; /* min */
-  double output_range;           /* max - min */
-} Transform;
-
-/* Affine transformation macros */
-
-/* X Scale: convert from user x value to normalized x coordinate (floating
-   point, 0.0 to 1.0). */
-#define XS(x)                                                                 \
-  (((x)-multigrapher->x_trans.input_min) / multigrapher->x_trans.input_range)
-/* X Reflect: map [0,1] to [1,0], if that's called for */
-#define XR(x) (multigrapher->x_trans.reverse ? 1.0 - (x) : (x))
-/* X Squeeze: map [0,1] range for normalized x coordinate into a smaller
-   interval, the x range for the plotting area within the graphics display */
-#define XSQ(x)                                                                \
-  (multigrapher->x_trans.squeezed_min                                         \
-   + (x)*multigrapher->x_trans.squeezed_range)
-/* X Plot: convert from normalized x coordinate to floating point libplot
-   coordinate. */
-#define XP(x)                                                                 \
-  (multigrapher->x_trans.output_min + (x)*multigrapher->x_trans.output_range)
-/* X Value: convert from user x value (floating point) to floating point
-   libplot coordinate. */
-#define XV(x) XP (XSQ (XR (XS (x))))
-/* X Normalize: the same, but do not perform reflection if any.  (We use
-   this for plotting of axes and their labels.) */
-#define XN(y) XP (XSQ (XS (y)))
-
-/* Y Scale: convert from user y value to normalized y coordinate (floating
-   point, 0.0 to 1.0). */
-#define YS(y)                                                                 \
-  (((y)-multigrapher->y_trans.input_min) / multigrapher->y_trans.input_range)
-/* Y Reflect: map [0,1] to [1,0], if that's called for */
-#define YR(y) (multigrapher->y_trans.reverse ? 1.0 - (y) : (y))
-/* Y Squeeze: map [0,1] range for normalized y coordinate into a smaller
-   interval, the y range for the plotting area within the graphics display */
-#define YSQ(y)                                                                \
-  (multigrapher->y_trans.squeezed_min                                         \
-   + (y)*multigrapher->y_trans.squeezed_range)
-/* Y Plot: convert from normalized y coordinate to floating point libplot
-   coordinate. */
-#define YP(y)                                                                 \
-  (multigrapher->y_trans.output_min + (y)*multigrapher->y_trans.output_range)
-/* Y Value: convert from user y value (floating point) to floating point
-   libplot coordinate.  (We use this for plotting of points.) */
-#define YV(y) YP (YSQ (YR (YS (y))))
-/* Y Normalize: the same, but do not perform reflection if any.  (We use
-   this for plotting of axes and their labels.) */
-#define YN(y) YP (YSQ (YS (y)))
-
-/* Size Scale: convert distances, or sizes, from normalized coors to
-   libplot coordinates.  (Used for tick, symbol, and font sizes.)  The min
-   should really be precomputed. */
-#define SS(x)                                                                 \
-  (DMIN (multigrapher->x_trans.output_range                                   \
-             * multigrapher->x_trans.squeezed_range,                          \
-         multigrapher->y_trans.output_range                                   \
-             * multigrapher->y_trans.squeezed_range)                          \
-   * (x))
-
-/* The `x_axis' and `y_axis' elements of a Multigrapher, which are of type
-   `Axis', specify the layout of the two axes of a graph.  They are used in
-   the drawing of a graph frame.  All elements that are doubles are
-   expressed in user coordinates (unless the axis is logarithmic, in which
-   case logs are taken before this structure is filled in). */
-
-/* The `x_axis' and `y_axis' elements are filled in by calls to
-   prepare_axis() when set_graph_parameters() is called.  The only
-   exceptions to this are the elements `max_width' and `non_user_ticks',
-   which are filled in by draw_frame_of_graph(), as the frame for a graph
-   is being drawn. */
-
-typedef struct
-{
-  const char *font_name; /* fontname for axis label and tick labels */
-  double font_size;      /* font size for axis label and tick labels */
-  const char *label;     /* axis label (a string) */
-  int type;              /* axis layout type (A_LINEAR or A_LOG10) */
-  double tick_spacing;   /* distance between ticks */
-  int min_tick_count, max_tick_count; /* tick location = count * spacing */
-  bool have_lin_subticks;     /* does axis have linearly spaced subticks? */
-  double lin_subtick_spacing; /* distance between linearly spaced subticks */
-  int min_lin_subtick_count, max_lin_subtick_count;
-  bool have_normal_subsubticks;    /* does axis have logarithmic subsubticks?*/
-  bool user_specified_subsubticks; /* axis has user-spec'd subsubticks? */
-  double subsubtick_spacing;       /* spacing for user-specified ones */
-  double other_axis_loc;           /* location of intersection w/ other axis */
-  double alt_other_axis_loc; /* alternative loc. (e.g. right end vs. left)*/
-  bool switch_axis_end;      /* other axis at right/top, not left/bottom? */
-  bool omit_ticks;           /* just plain omit them (and their labels) ? */
-  double max_label_width;    /* max width of labels placed on axis, in
-                                libplot coors (we update this during
-                                plotting, for y axis only) */
-  int labelled_ticks;        /* number of labelled ticks, subticks, and
-                                subsubticks drawn on the axis
-                                (we update this during plotting, so we
-                                can advise the user to specify a tick
-                                spacing by hand if labelled_ticks <= 2) */
-} Axis;
-
-/* The Multigrapher structure.  A pointer to one of these is passed as the
-   first argument to each Multigrapher method (e.g., plot_point()). */
-
-struct MultigrapherStruct
-{
-  /* multigrapher parameters (not updated over a multigrapher's lifetime) */
-  plPlotter *plotter;        /* GNU libplot Plotter handle */
-  const char *output_format; /* type of libplot device driver [unused] */
-  const char *bg_color;      /* color of background, if non-NULL */
-  bool save_screen;          /* erase display when opening plotter? */
-  /* graph parameters (constant over any single graph) */
-  Transform x_trans, y_trans;  /* user->device coor transformations */
-  Axis x_axis, y_axis;         /* information on each axis */
-  grid_type grid_spec;         /* frame specification */
-  double blankout_fraction;    /* 1.0 means blank whole box before drawing */
-  bool no_rotate_y_label;      /* useful for pre-X11R6 X servers */
-  double tick_size;            /* fractional tick size */
-  double subtick_size;         /* fractional subtick size (for linear axes) */
-  double frame_line_width;     /* fractional width of lines in the frame */
-  double half_line_width;      /* approx. half of this, in libplot coors */
-  const char *frame_color;     /* color for frame (and graph, if no -C) */
-  const char *title;           /* graph title */
-  const char *title_font_name; /* font for graph title */
-  double title_font_size;      /* fractional height of graph title */
-  int clip_mode;               /* 0, 1, or 2 (cf. clipping in gnuplot) */
-  /* following elements are updated during plotting of points; they're the
-     chief repository for internal state */
-  bool first_point_of_polyline;  /* true only at beginning of each polyline */
-  double oldpoint_x, oldpoint_y; /* last-plotted point */
-  int symbol;                    /* symbol being plotted at each point */
-  int linemode;                  /* linemode used for polyline */
-  int graph_num;
-  char *graph_symbols;
-  float legend_pos;
-};
-
-/* forward references */
-static int clip_line (Multigrapher *multigrapher, double *x0_p, double *y0_p,
-                      double *x1_p, double *y1_p);
-static int spacing_type (double spacing);
-static outcode compute_outcode (Multigrapher *multigrapher, double x, double y,
-                                bool tolerant);
-static void plot_abscissa_log_subsubtick (Multigrapher *multigrapher,
-                                          double xval);
-static void plot_errorbar (Multigrapher *multigrapher, const Point *p);
-static void plot_ordinate_log_subsubtick (Multigrapher *multigrapher,
-                                          double xval);
-static void prepare_axis (Axis *axisp, Transform *trans, double min,
-                          double max, double spacing, const char *font_name,
-                          double font_size, const char *label,
-                          double subsubtick_spacing,
-                          bool user_specified_subsubticks,
-                          bool round_to_next_tick, bool log_axis,
-                          bool reverse_axis, bool switch_axis_end,
-                          bool omit_ticks);
-static void print_tick_label (char *labelbuf, const Axis *axis,
-                              const Transform *transform, double val);
-static void scale1 (double min, double max, double *tick_spacing,
-                    int *tick_spacing_type);
-static void set_line_style (Multigrapher *multigrapher, int style,
-                            bool use_color);
-static void transpose_portmanteau (int *val);
-
-/* print_tick_label() prints a label on an axis tick.  The format depends
- * on whether the axis is a log axis or a linear axis; also, the magnitude
- * of the axis labels.
- */
-
-static void
+void
 print_tick_label (char *labelbuf, const Axis *axis, const Transform *transform,
                   double val)
 {
@@ -481,7 +136,7 @@ print_tick_label (char *labelbuf, const Axis *axis, const Transform *transform,
 /* ARGS: min,max = data min, max
          tick_spacing = inter-tick spacing
          tick_spacing_type = 0,1,2 i.e. S_ONE,S_TWO,S_FIVE */
-static void
+void
 scale1 (double min, double max, double *tick_spacing, int *tick_spacing_type)
 {
   int k;
@@ -530,7 +185,7 @@ scale1 (double min, double max, double *tick_spacing, int *tick_spacing_type)
 
 /* Determine whether an inter-tick spacing (in practice, one specified by
    the user) is 1.0, 2.0, or 5.0 times a power of 10. */
-static int
+int
 spacing_type (double incr)
 {
   int i;
@@ -571,7 +226,7 @@ spacing_type (double incr)
          reverse_axis = reverse min, max?
          switch_axis_end = intersection w/ other axis in alt. pos.?
          omit_ticks = suppress all ticks and tick labels? */
-static void
+void
 prepare_axis (Axis *axisp, Transform *trans, double min, double max,
               double spacing, const char *font_name, double font_size,
               const char *label, double subsubtick_spacing,
@@ -773,7 +428,7 @@ new_multigrapher (const char *output_format, const char *bg_color,
                   const char *bitmap_size, const char *emulate_color,
                   const char *max_line_length, const char *meta_portable,
                   const char *page_size, const char *rotation_angle,
-                  bool save_screen)
+                  bool save_screen, bool legend_plot)
 {
   plPlotterParams *plotter_params;
   plPlotter *plotter;
@@ -807,6 +462,7 @@ new_multigrapher (const char *output_format, const char *bg_color,
   pl_fspace_r (plotter, 0.0, 0.0, (double)PLOT_SIZE, (double)PLOT_SIZE);
 
   multigrapher->graph_num = 0;
+  multigrapher->legend_plot = legend_plot;
   multigrapher->graph_symbols = (char *)xmalloc (6 * sizeof (char));
   strcpy (multigrapher->graph_symbols, "12345");
   return multigrapher;
@@ -883,7 +539,8 @@ set_graph_parameters (
     double x_font_size, const char *x_label, const char *y_font_name,
     double y_font_size, const char *y_label, bool no_rotate_y_label,
     int log_axis, int round_to_next_tick, int switch_axis_end, int omit_ticks,
-    int clip_mode, double blankout_fraction, bool transpose_axes)
+    int clip_mode, double blankout_fraction, bool transpose_axes,
+    char legend_position, bool legend_plot)
 {
   double x_subsubtick_spacing = 0.0, y_subsubtick_spacing = 0.0;
   /* local portmanteau variables */
@@ -1146,21 +803,24 @@ set_graph_parameters (
   multigrapher->oldpoint_x = 0.0;
   multigrapher->oldpoint_y = 0.0;
 
-  char pos = 'c'; // 'r';
-  switch (pos)
+  if (legend_plot)
     {
-    case 'c':
-      multigrapher->legend_pos = 0.5;
-      break;
-    case 'r':
-      multigrapher->legend_pos = 0.8;
-      break;
-    case 'l':
-      multigrapher->legend_pos = 0.2;
-      break;
-    default:
-      multigrapher->legend_pos = 0.2;
-      fprintf (stderr, "Incorrect legend position type, defaulting to: l\n");
+      switch (legend_position)
+        {
+        case 'c':
+          multigrapher->legend_pos = 0.5;
+          break;
+        case 'r':
+          multigrapher->legend_pos = 0.8;
+          break;
+        case 'l':
+          multigrapher->legend_pos = 0.2;
+          break;
+        default:
+          multigrapher->legend_pos = 0.2;
+          fprintf (stderr,
+                   "Incorrect legend position type, defaulting to: l\n");
+        }
     }
 }
 
@@ -1198,14 +858,15 @@ set_graph_parameters (
    for the first time; see graph.c.  */
 
 void
-draw_legend_of_graph (Multigrapher *multigrapher, bool draw_canvas)
+draw_legend_of_graph (Multigrapher *multigrapher)
 {
+  // TODO: add fill behind the legend
   /* pl_colorname_r (multigrapher->plotter, "grey"); */
 
   /* pl_filltype_r (multigrapher->plotter, 1);	/\* turn on filling *\/ */
 
-  pl_colorname_r (multigrapher->plotter, "grey");
-  pl_linemod_r (multigrapher->plotter, "solid");
+  /* pl_colorname_r (multigrapher->plotter, "grey"); */
+  /* pl_linemod_r (multigrapher->plotter, "solid"); */
   /* pl_filltype_r (multigrapher->plotter, 1); */
   /* pl_fbox_r (multigrapher->plotter, */
   /* 			 XP(XSQ(multigrapher->legend_pos - 0.11 *
@@ -2216,7 +1877,7 @@ draw_frame_of_graph (Multigrapher *multigrapher, bool draw_canvas)
    ones */
 
 /* ARGS: xval = log of location */
-static void
+void
 plot_abscissa_log_subsubtick (Multigrapher *multigrapher, double xval)
 {
   double xrange
@@ -2326,7 +1987,7 @@ plot_abscissa_log_subsubtick (Multigrapher *multigrapher, double xval)
 }
 
 /* ARGS: yval = log of location */
-static void
+void
 plot_ordinate_log_subsubtick (Multigrapher *multigrapher, double yval)
 {
   double yrange
@@ -2452,7 +2113,7 @@ plot_ordinate_log_subsubtick (Multigrapher *multigrapher, double yval)
 /* set_line_style() maps from line modes to physical line modes.  See
  * explanation at head of file. */
 
-static void
+void
 set_line_style (Multigrapher *multigrapher, int style, bool use_color)
 {
   if (!use_color) /* monochrome */
@@ -2574,7 +2235,10 @@ plot_point (Multigrapher *multigrapher, const Point *point)
         intfill = 1 + IROUND ((1.0 - point->fill_fraction) * 0xfffe);
       pl_filltype_r (multigrapher->plotter, intfill);
 
-      add_to_legend (multigrapher, point);
+      if (multigrapher->legend_plot)
+        {
+          add_to_legend (multigrapher, point);
+        }
     }
 
   /* determine endpoints of new line segment (for the first point of a
@@ -2742,7 +2406,7 @@ plot_point (Multigrapher *multigrapher, const Point *point)
  * value contains bitfields ACCEPTED, CLIPPED_FIRST, and CLIPPED_SECOND.
  */
 
-static int
+int
 clip_line (Multigrapher *multigrapher, double *x0_p, double *y0_p,
            double *x1_p, double *y1_p)
 {
@@ -2837,7 +2501,7 @@ clip_line (Multigrapher *multigrapher, double *x0_p, double *y0_p,
    RIGHT, BOTTOM, TOP.  Nine possibilities:
    {LEFT, interior, RIGHT} x {BOTTOM, interior, TOP}.
    The `tolerant' flag specifies how we handle points on the boundary. */
-static outcode
+outcode
 compute_outcode (Multigrapher *multigrapher, double x, double y, bool tolerant)
 {
   outcode code = 0;
@@ -2857,7 +2521,7 @@ compute_outcode (Multigrapher *multigrapher, double x, double y, bool tolerant)
   return code;
 }
 
-static void
+void
 transpose_portmanteau (int *val)
 {
   bool xtrue, ytrue;
@@ -2870,7 +2534,7 @@ transpose_portmanteau (int *val)
   *val = newval;
 }
 
-static void
+void
 plot_errorbar (Multigrapher *multigrapher, const Point *p)
 {
   if (p->have_x_errorbar || p->have_y_errorbar)
@@ -2918,4 +2582,85 @@ end_polyline_and_flush (Multigrapher *multigrapher)
   pl_endpath_r (multigrapher->plotter);
   pl_flushpl_r (multigrapher->plotter);
   multigrapher->first_point_of_polyline = true;
+}
+
+int
+plot_graph_no_filter (ARG_LIST *arg_list)
+{
+
+  /* fill in any of min_? and max_? that user didn't specify (the
+     prefix "final_" means these arguments were finalized at the
+     time the first file of the plot was processed) */
+  array_bounds (arg_list->p, arg_list->no_of_points,
+                arg_list->final_transpose_axes, arg_list->clip_mode,
+                &arg_list->final_min_x, &arg_list->final_min_y,
+                &arg_list->final_max_x, &arg_list->final_max_y,
+                arg_list->final_spec_min_x, arg_list->final_spec_min_y,
+                arg_list->final_spec_max_x, arg_list->final_spec_max_y);
+
+  if (arg_list->first_graph_of_multigraph)
+    /* still haven't created multigrapher, do so now */
+    {
+      if ((arg_list->multigrapher = new_multigrapher (
+               arg_list->output_format, arg_list->bg_color,
+               arg_list->bitmap_size, arg_list->emulate_color,
+               arg_list->max_line_length, arg_list->meta_portable,
+               arg_list->page_size, arg_list->rotation_angle,
+               arg_list->save_screen, arg_list->legend_plot))
+          == NULL)
+        {
+          fprintf (stderr,
+                   "%s: error: the graphing device could not be opened\n",
+                   progname);
+          return EXIT_FAILURE;
+        }
+    }
+
+  /* begin graph: push new libplot drawing state onto stack of
+     states; also concatenate the current transformation matrix
+     with a matrix formed from the repositioning parameters (this
+     will take effect for the duration of the graph) */
+  begin_graph (arg_list->multigrapher, arg_list->reposition_scale,
+               arg_list->reposition_trans_x, arg_list->reposition_trans_y);
+
+  /* font selection, saves typing */
+  if ((arg_list->title_font_name == NULL) && (arg_list->font_name != NULL))
+    arg_list->title_font_name = arg_list->font_name;
+
+  set_graph_parameters (
+      arg_list->multigrapher, arg_list->frame_line_width,
+      arg_list->frame_color, arg_list->top_label, arg_list->title_font_name,
+      arg_list->title_font_size, /*for title*/
+      arg_list->tick_size, arg_list->grid_spec, arg_list->final_min_x,
+      arg_list->final_max_x, arg_list->final_spacing_x, arg_list->final_min_y,
+      arg_list->final_max_y, arg_list->final_spacing_y,
+      arg_list->final_spec_spacing_x, arg_list->final_spec_spacing_y,
+      arg_list->plot_width, arg_list->plot_height, arg_list->margin_below,
+      arg_list->margin_left, arg_list->font_name,
+      arg_list->font_size, /* for abscissa label */
+      arg_list->x_label, arg_list->font_name,
+      arg_list->font_size, /* for ordinate label */
+      arg_list->y_label, arg_list->no_rotate_y_label,
+      /* these args are portmanteaux */
+      arg_list->final_log_axis, arg_list->final_round_to_next_tick,
+      arg_list->switch_axis_end, arg_list->omit_ticks,
+      /* more args */
+      arg_list->clip_mode, arg_list->blankout_fraction,
+      arg_list->final_transpose_axes, arg_list->legend_position,
+      arg_list->legend_plot);
+
+  /* draw the graph frame (grid, ticks, etc.); draw a `canvas' (a
+     background opaque white rectangle) only if this isn't the
+     first graph */
+  draw_frame_of_graph (arg_list->multigrapher,
+                       arg_list->first_graph_of_multigraph ? false : true);
+
+  /* plot the laboriously read-in array */
+  plot_point_array (arg_list->multigrapher, arg_list->p,
+                    arg_list->no_of_points);
+
+  /* free points array */
+  free (arg_list->p);
+  arg_list->no_of_points = 0;
+  return EXIT_SUCCESS;
 }

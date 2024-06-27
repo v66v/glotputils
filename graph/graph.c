@@ -24,48 +24,17 @@
 #include "file.h"
 #include "fontlist.h"
 #include "libcommon.h"
+#include "plotter.h"
 #include "sys-defines.h"
 
 int
 main (int argc, char *argv[])
 {
-  get_args (argc, argv);
+  if ((parse_args (argc, argv) == EXIT_FAILURE))
+    return EXIT_FAILURE;
 
-  if (arg_list.errcnt > 0)
-    {
-      fprintf (stderr, "Try `%s --help' for more information\n", progname);
-      return EXIT_FAILURE;
-    }
-  if (arg_list.show_version)
-    {
-      display_version (progname, written, copyright);
-      return EXIT_SUCCESS;
-    }
-  if (arg_list.do_list_fonts)
-    {
-      int success;
-
-      success = list_fonts (arg_list.output_format, progname);
-      if (success)
-        return EXIT_SUCCESS;
-      else
-        return EXIT_FAILURE;
-    }
-  if (arg_list.show_fonts)
-    {
-      int success;
-
-      success = display_fonts (arg_list.output_format, progname);
-      if (success)
-        return EXIT_SUCCESS;
-      else
-        return EXIT_FAILURE;
-    }
-  if (arg_list.show_usage)
-    {
-      display_usage (progname, hidden_options, usage_appendage, 2);
-      return EXIT_SUCCESS;
-    }
+  if (show_args () == EXIT_FAILURE)
+    return EXIT_FAILURE;
 
   /* End of command-line parse.  At this point, we need to terminate the
      graph currently in progress, if it's nonempty (i.e. if one or more
@@ -79,87 +48,8 @@ main (int argc, char *argv[])
          to plot it, after computing bounds. */
       if (!arg_list.filter)
         {
-
-          /* fill in any of min_? and max_? that user didn't specify (the
-             prefix "final_" means these arguments were finalized at the
-             time the first file of the plot was processed) */
-          array_bounds (arg_list.p, arg_list.no_of_points,
-                        arg_list.final_transpose_axes, arg_list.clip_mode,
-                        &arg_list.final_min_x, &arg_list.final_min_y,
-                        &arg_list.final_max_x, &arg_list.final_max_y,
-                        arg_list.final_spec_min_x, arg_list.final_spec_min_y,
-                        arg_list.final_spec_max_x, arg_list.final_spec_max_y);
-
-          if (arg_list.first_graph_of_multigraph)
-            /* still haven't created multigrapher, do so now */
-            {
-              if ((arg_list.multigrapher = new_multigrapher (
-                       arg_list.output_format, arg_list.bg_color,
-                       arg_list.bitmap_size, arg_list.emulate_color,
-                       arg_list.max_line_length, arg_list.meta_portable,
-                       arg_list.page_size, arg_list.rotation_angle,
-                       arg_list.save_screen))
-                  == NULL)
-                {
-                  fprintf (
-                      stderr,
-                      "%s: error: the graphing device could not be opened\n",
-                      progname);
-                  return EXIT_FAILURE;
-                }
-            }
-
-          /* begin graph: push new libplot drawing state onto stack of
-             states; also concatenate the current transformation matrix
-             with a matrix formed from the repositioning parameters (this
-             will take effect for the duration of the graph) */
-          begin_graph (arg_list.multigrapher, arg_list.reposition_scale,
-                       arg_list.reposition_trans_x,
-                       arg_list.reposition_trans_y);
-
-          /* font selection, saves typing */
-          if ((arg_list.title_font_name == NULL)
-              && (arg_list.font_name != NULL))
-            arg_list.title_font_name = arg_list.font_name;
-
-          set_graph_parameters (
-              arg_list.multigrapher, arg_list.frame_line_width,
-              arg_list.frame_color, arg_list.top_label,
-              arg_list.title_font_name, arg_list.title_font_size, /*for title*/
-              arg_list.tick_size, arg_list.grid_spec, arg_list.final_min_x,
-              arg_list.final_max_x, arg_list.final_spacing_x,
-              arg_list.final_min_y, arg_list.final_max_y,
-              arg_list.final_spacing_y, arg_list.final_spec_spacing_x,
-              arg_list.final_spec_spacing_y, arg_list.plot_width,
-              arg_list.plot_height, arg_list.margin_below,
-              arg_list.margin_left, arg_list.font_name,
-              arg_list.font_size, /* for abscissa label */
-              arg_list.x_label, arg_list.font_name,
-              arg_list.font_size, /* for ordinate label */
-              arg_list.y_label, arg_list.no_rotate_y_label,
-              /* these args are portmanteaux */
-              arg_list.final_log_axis, arg_list.final_round_to_next_tick,
-              arg_list.switch_axis_end, arg_list.omit_ticks,
-              /* more args */
-              arg_list.clip_mode, arg_list.blankout_fraction,
-              arg_list.final_transpose_axes);
-
-          /* draw the graph frame (grid, ticks, etc.); draw a `canvas' (a
-             background opaque white rectangle) only if this isn't the
-             first graph */
-          // TODO: add it here?
-          draw_frame_of_graph (arg_list.multigrapher,
-                               arg_list.first_graph_of_multigraph ? false
-                                                                  : true);
-
-          /* plot the laboriously read-in array */
-          plot_point_array (arg_list.multigrapher, arg_list.p,
-                            arg_list.no_of_points);
-
-          /* free points array */
-          free (arg_list.p);
-          arg_list.no_of_points = 0;
-
+          if (plot_graph_no_filter (&arg_list) == EXIT_FAILURE)
+            return EXIT_FAILURE;
         } /* end of not-filter case */
 
       /* draw graph frame on top of graph, if user requested it */
@@ -169,10 +59,12 @@ main (int argc, char *argv[])
           draw_frame_of_graph (arg_list.multigrapher, false);
         }
 
-      draw_legend_of_graph (arg_list.multigrapher, false);
+      if (arg_list.legend_plot)
+        {
+          draw_legend_of_graph (arg_list.multigrapher);
+        }
       /* end graph: pop drawing state off the stack of drawing states */
       end_graph (arg_list.multigrapher);
-
     } /* end of nonempty-graph case */
 
   /* finish up by deleting our multigrapher (one must have been created,

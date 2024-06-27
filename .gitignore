@@ -2,7 +2,6 @@
 .ccls-cache/
 *.o
 *.lo
-plotutils-2.6.tar.gz
 /Makefile
 /config.h
 /config.log
