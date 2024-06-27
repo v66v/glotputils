@@ -1,3 +1,16 @@
+#+title: GlotPutils
+
+GlotPutils is a WIP refactor of the GNU Plotutils, with possible improvements allong the way.
+This project was started due to the lack of legend support in the upstream package.
+
+* Compiling
+#+begin_src bash
+  guix shell --pure -Df guix.scm
+  ./configure
+  make -j4
+#+end_src
+
+* GNU Plotutils README
 This is release 2.6 of the GNU plotutils (plotting utilities) package,
 including release 4.4 of GNU libplot: a thread-safe function library for
 exporting two-dimensional vector graphics files, and for displaying
@@ -38,7 +51,7 @@ The contents of the plotutils package are:
 		to export vector graphics in many different file formats.
 		You may also use it to create vector graphics animations
 		under the X Window System.
-		
+
 		There are two versions of libplot: a conventional library
 		of C functions, which is also referred to as libplot, and
 		its C++ counterpart `libplotter', which is a class library.
@@ -91,7 +104,7 @@ The contents of the plotutils package are:
 		encoding (a superset of ASCII; the ISO-Latin-1 support in
 		the 20 non-Cyrillic, non-Japanese Hershey fonts is
 		extensive but not quite complete).
-		
+
 		(Clones of the 35 standard Postscript fonts, in Type 1
 		format, have been contributed by URW GmbH for distribution
 		under the GNU General Public License.  They may well be
@@ -117,7 +130,7 @@ The contents of the plotutils package are:
 		the `--enable-libxmi' option to ./configure.  The public
 		header file for libxmi, xmi.h, will also be installed, as
 		will the documentation (in texinfo format).
-		
+
 		The reason `libxmi' isn't built by default is that it's
 		also distributed as a separate package.  Actually, what
 		isn't built by default is a standalone version of libxmi.
@@ -141,8 +154,8 @@ The contents of the plotutils package are:
 		is device-independent in the sense that its options do not
 		depend on the display device the plot is destined for.
 		To the maximum degree feasible, the output of `graph' will
-		appear the same on all display devices.  
-	
+		appear the same on all display devices.
+
 		Which display device is driven, or output format is
 		produced, is specified by the `-T' option.  There are
 		effectively many different variants of `graph',
@@ -160,7 +173,7 @@ The contents of the plotutils package are:
 				in this format can be viewed with the free
 				image display application `xv'.
 
-		graph -T pnm	A variant that produces output in 
+		graph -T pnm	A variant that produces output in
 				`Portable Anymap' format (PBM/PGM/PPM,
 				whichever is appropriate).  Output
 				in this format can be viewed with `xv',
@@ -169,7 +182,7 @@ The contents of the plotutils package are:
 
 		graph -T gif	A variant that produces output in a
 				pseudo-GIF format that can be displayed
-				by many applications that understand	
+				by many applications that understand
 				GIF format.  The pseudo-GIF format uses
 				run-length encoding, so it does not
 				transgress the well known Unisys LZW
@@ -179,7 +192,7 @@ The contents of the plotutils package are:
 		                (scalable vector graphics) format.  SVG is
 		                the XML-based graphics format that
                                 has been endorsed by the W3 Consortium
-				for Web use.  See 
+				for Web use.  See
 				http://www.w3.org/Graphics .
 				For comments on compatibility with other
 				software that can edit or display
@@ -236,7 +249,7 @@ The contents of the plotutils package are:
 				many non-Postscript printers, such as
 				LaserJets.
 
-		graph -T regis  A variant that produces ReGIS graphics 
+		graph -T regis  A variant that produces ReGIS graphics
 				output, suitable for viewing on a
 				DECwindows dxterm or a DEC graphics
 				terminal, such as a VT340, VT330, VT241, or
@@ -273,7 +286,7 @@ The contents of the plotutils package are:
 			program | graph -T X -x xmin xmax -y ymin ymax
 
 		where `program' generates a stream of data points.)
-		
+
 		All variants of `graph' will accept ASCII input (the
 		default), or unformatted binary input (i.e., a stream of
 		floating point numbers or integers), or input in the
@@ -303,7 +316,7 @@ The contents of the plotutils package are:
 		and then use the `tee' command to direct the output of raw
 		`graph', which is in metafile format, to two separate
 		invocations of `plot'.
-	
+
 		`plot' may also be useful as a post-processor for older
 		programs that produce output in the traditional plot(5)
 		graphics format.  GNU metafile format is an enhanced version
@@ -352,7 +365,7 @@ The contents of the plotutils package are:
 		support all the features supported by the Tektronix
 		emulator in the MS-DOS version of kermit, it can certainly
 		parse the output of the gnuplot Tektronix terminal drivers.
-		
+
 	plotfont. This is a simple utility that prints out a character
 		chart for any font available to the above four utilities
 		(graph, plot, pic2plot, tek2plot) and the underlying
@@ -393,7 +406,7 @@ The contents of the plotutils package are:
 		option is selected, `spline' acts as a true real-time
 		filter, since cubic Bessel interpolation is local rather
 		than global.
-		
+
 	ode.  This interactive program supplements the computation engine
 		of `gnuplot', which will compute and plot functions, by
 		providing the ability to integrate systems of ordinary
