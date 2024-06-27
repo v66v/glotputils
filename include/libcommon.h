@@ -1,3 +1,4 @@
+#pragma once
 /* This file is part of the GNU plotutils package.  Copyright (C) 1995,
    1996, 1997, 1998, 1999, 2000, 2005, 2008, Free Software Foundation, Inc.
 
@@ -41,7 +42,7 @@
 # define ___BEGIN_DECLS		/* empty */
 # define ___END_DECLS		/* empty */
 #endif
-     
+
 ___BEGIN_DECLS
 
 extern char * xstrdup (const char *s);

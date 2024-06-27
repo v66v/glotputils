@@ -5,8 +5,12 @@
 AC_INIT([GNU plotutils],[2.6],[bug-plotutils@gnu.org])
 AC_PREREQ(2.59)
 AC_CONFIG_SRCDIR(graph/graph.c)
-AM_INIT_AUTOMAKE([plotutils],[2.6])
+AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(config.h:config.hin)
+
+LT_INIT
+AC_CONFIG_MACRO_DIRS([m4])
+AC_PROG_CXX
 
 # The following will be defined in config.h, if appropriate.
 
@@ -17,31 +21,31 @@ AH_TEMPLATE([_HPUX_SOURCE],
 	[Define to 1 under HP/UX to get matherr-related things from math.h.])
 
 # Threading-related.
-AH_TEMPLATE([PTHREAD_SUPPORT], 
+AH_TEMPLATE([PTHREAD_SUPPORT],
 	[Define to 1 if your libc includes support for pthreads.])
 
 # X11-related.
-AH_TEMPLATE([USE_MOTIF], 
+AH_TEMPLATE([USE_MOTIF],
 	[Define to request that Motif should be used, if X11 is used.])
 AH_TEMPLATE([X_THREAD_SUPPORT],
 	[Define to signal support in libXt/libX11 for multithreading.])
-AH_TEMPLATE([HAVE_DBE_SUPPORT], 
+AH_TEMPLATE([HAVE_DBE_SUPPORT],
 	[Define if -lXext has support for the DBE X11 protocol extension.])
-AH_TEMPLATE([HAVE_MBX_SUPPORT], 
+AH_TEMPLATE([HAVE_MBX_SUPPORT],
 	[Define if -lXext has support for the MBX X11 protocol extension.])
 
 # PNG-related.
-AH_TEMPLATE([HAVE_LIBPNG], 
+AH_TEMPLATE([HAVE_LIBPNG],
 	[Define if libpng is available.])
-AH_TEMPLATE([INCLUDE_PNG_SUPPORT], 
+AH_TEMPLATE([INCLUDE_PNG_SUPPORT],
 	[Define to request PNG support (requires HAVE_LIBPNG, HAVE_PNG_H).])
 
 # Fonts supported by Plotters of various types.
-AH_TEMPLATE([USE_LJ_FONTS_IN_X], 
+AH_TEMPLATE([USE_LJ_FONTS_IN_X],
 	[Define to enable support for the 45 LaserJet fonts in X output.])
-AH_TEMPLATE([USE_LJ_FONTS_IN_PS], 
+AH_TEMPLATE([USE_LJ_FONTS_IN_PS],
 	[Define to enable support for the 45 LaserJet fonts in PS output.])
-AH_TEMPLATE([USE_PS_FONTS_IN_PCL], 
+AH_TEMPLATE([USE_PS_FONTS_IN_PCL],
 	[Define to enable support for the 35 PS fonts in PCL output.])
 
 # Did installer set the CFLAGS and CXXFLAGS environ variables before
@@ -63,7 +67,7 @@ fi
 # AC_PROG_MAKE_SET, or equivalents, so we don't perform them explicitly.
 # Note: this can apparently alter CFLAGS, on a few platforms, e.g., on
 # SCO OpenServer 5 (i.e. *-*-sco3.2v5*), "-belf" is added.
-AC_PROG_LIBTOOL
+dnl AC_PROG_LIBTOOL
 
 # Determine extension (e.g. ".exe") on executables, if any.
 AC_EXEEXT
@@ -123,7 +127,7 @@ AC_CHECK_FUNCS(ctime_r localtime_r)
 AC_CHECK_FUNCS(waitpid)
 
 # Other non-X library functions and auxiliary libraries.
-# 
+#
 # SGI's have matherr in libmx.a, not libm.a
 AC_CHECK_LIB(mx, matherr, LIBS="$LIBS -lmx", LIBS="$LIBS -lm")
 AC_CHECK_FUNCS(memcpy memmove strchr strcasecmp strerror matherr j0 erf)
@@ -226,7 +230,7 @@ AC_ARG_WITH(xpm, [  --with-xpm[=DIR]          use Xpm with Motif: include and li
 
 # NOTE: For each `with' option, there are four possible values for the
 # associated shell variable, all of which we must handle:
-# 
+#
 #     1. ""    (if neither `--with-foo' nor `--without-foo' was specified)
 #     2. "no"  (obtained if `--without-foo' was specified)
 #     3. "yes" (obtained if `--with-foo' was specified, without an argument)
@@ -258,26 +262,26 @@ xno|x)
   LDFLAGS="$LDFLAGS $X_LIBS"
   case "x$with_xpm" in
     xno|x)
-      AC_CHECK_LIB(Xpm, XpmReadFileToPixmap, X_BASIC_LIBS="-lXpm $X_BASIC_LIBS", , -lXext -lX11) 
+      AC_CHECK_LIB(Xpm, XpmReadFileToPixmap, X_BASIC_LIBS="-lXpm $X_BASIC_LIBS", , -lXext -lX11)
       ;;
     xyes)
-      AC_CHECK_LIB(Xpm, XpmReadFileToPixmap, X_BASIC_LIBS="-lXpm $X_BASIC_LIBS", , -lXext -lX11) 
+      AC_CHECK_LIB(Xpm, XpmReadFileToPixmap, X_BASIC_LIBS="-lXpm $X_BASIC_LIBS", , -lXext -lX11)
       ;;
     *)
       LDFLAGS="$LDFLAGS -L$with_xpm/lib"
-      AC_CHECK_LIB(Xpm, XpmReadFileToPixmap, X_CFLAGS="$X_CFLAGS -I$with_xpm/include"; X_LIBS="$X_LIBS -L$with_xpm/lib"; X_BASIC_LIBS="-lXpm $X_BASIC_LIBS", , -lXext -lX11) 
+      AC_CHECK_LIB(Xpm, XpmReadFileToPixmap, X_CFLAGS="$X_CFLAGS -I$with_xpm/include"; X_LIBS="$X_LIBS -L$with_xpm/lib"; X_BASIC_LIBS="-lXpm $X_BASIC_LIBS", , -lXext -lX11)
       ;;
   esac
   LDFLAGS="$our_saved_LDFLAGS"
 
   our_saved_LDFLAGS="$LDFLAGS"
   LDFLAGS="$LDFLAGS $X_LIBS"
-  AC_CHECK_LIB(Xp, XpQueryExtension, X_BASIC_LIBS="-lXp $X_BASIC_LIBS", , -lXext -lX11) 
-  AC_CHECK_LIB(gen, regex, LIBS="$LIBS -lc -lgen", LIBS="$LIBS") 
-  AC_CHECK_LIB(PW, regex, LIBS="$LIBS -lc -lPW", LIBS="$LIBS") 
+  AC_CHECK_LIB(Xp, XpQueryExtension, X_BASIC_LIBS="-lXp $X_BASIC_LIBS", , -lXext -lX11)
+  AC_CHECK_LIB(gen, regex, LIBS="$LIBS -lc -lgen", LIBS="$LIBS")
+  AC_CHECK_LIB(PW, regex, LIBS="$LIBS -lc -lPW", LIBS="$LIBS")
   LDFLAGS="$our_saved_LDFLAGS"
 
-  AC_DEFINE(USE_MOTIF) 
+  AC_DEFINE(USE_MOTIF)
   ;;
 esac
 

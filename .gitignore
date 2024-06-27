@@ -100,3 +100,9 @@ plotutils-2.6.tar.gz
 /tek2plot/tek2plot
 /tek2plot/teksamples/Makefile
 /test/Makefile
+*.in
+Makefile
+autom4te.cache/
+*.m4
+configure
+*~

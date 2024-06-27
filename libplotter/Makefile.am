@@ -4,7 +4,7 @@ lib_LTLIBRARIES = libplotter.la
 
 libplotter_la_LDFLAGS = -version-info 4:4:2
 
-INCLUDES = $(X_CFLAGS) -I$(srcdir)/../include -DLIBPLOT -DLIBPLOTTER
+AM_CPPFLAGS = $(X_CFLAGS) -I$(srcdir)/../include -DLIBPLOT -DLIBPLOTTER
 
 MISRC = mi_alloc.cc mi_api.cc mi_arc.cc mi_canvas.cc mi_fllarc.cc	\
 mi_fllrct.cc mi_fplycon.cc mi_gc.cc mi_ply.cc mi_plycon.cc mi_plygen.cc	\
@@ -43,9 +43,9 @@ f_openpl.cc f_path.cc f_point.cc f_retrieve.cc f_text.cc
 ISRC = i_closepl.cc i_color.cc i_defplot.cc i_erase.cc i_openpl.cc	\
 i_path.cc i_point.cc i_rle.cc
 
-NSRC = n_defplot.cc n_write.cc 
+NSRC = n_defplot.cc n_write.cc
 
-ZSRC = z_defplot.cc z_write.cc 
+ZSRC = z_defplot.cc z_write.cc
 
 CSRC = c_attribs.cc c_closepl.cc c_color.cc c_defplot.cc c_emit.cc	\
 c_erase.cc c_mark.cc c_openpl.cc c_path.cc c_point.cc c_text.cc

@@ -2,11 +2,11 @@
 
 bin_PROGRAMS = graph
 
-graph_SOURCES = graph.c misc.c linemode.c reader.c plotter.c fontlist.c
+graph_SOURCES = graph.c misc.c linemode.c reader.c plotter.c fontlist.c arg.c file.c
 graph_LDADD = ../lib/libcommon.a ../libplot/libplot.la
-noinst_HEADERS = extern.h
+noinst_HEADERS = extern.h arg.h file.h
 
-INCLUDES = -I$(srcdir)/../include
+AM_CPPFLAGS = -I$(srcdir)/../include
 
 CLEANFILES = fontlist.c
 

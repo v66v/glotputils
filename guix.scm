@@ -4,7 +4,8 @@
              ;; (gnu packages pkg-config)
              ;; (gnu packages gcc)
              ;; (gnu packages guile)
-             ;; (gnu packages commencement)
+             (gnu packages commencement)
+             (gnu packages autotools)
              ;; (gnu packages base)
              (gnu packages)
 			 (gnu packages xorg)
@@ -72,7 +73,7 @@
                        (substitute* "test/plot2svg.test"
                          (("^exit .*") "exit 77")))))
                #~%standard-phases)))
-    (inputs (list libpng libx11 libxt libxaw))
+    (inputs (list libpng libx11 libxt libxaw gcc-toolchain automake autoconf libtool))
     (home-page "https://www.gnu.org/software/plotutils/")
     (synopsis "Plotting utilities and library")
     (description
