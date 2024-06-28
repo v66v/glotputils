@@ -3,6 +3,8 @@
 GlotPutils is a WIP refactor of the GNU Plotutils, with possible improvements allong the way.
 This project was started due to the lack of legend support in the upstream package.
 
+#+html: <p align="center"><img src="example.png"/></p>
+
 * Compiling
 #+begin_src bash
   guix shell --pure -Df guix.scm
