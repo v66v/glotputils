@@ -108,7 +108,8 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_graph_OBJECTS = graph.$(OBJEXT) misc.$(OBJEXT) linemode.$(OBJEXT) \
 	reader.$(OBJEXT) plotter.$(OBJEXT) fontlist.$(OBJEXT) \
-	arg.$(OBJEXT) file.$(OBJEXT)
+	arg.$(OBJEXT) file.$(OBJEXT) axis.$(OBJEXT) \
+	multigrapher.$(OBJEXT)
 graph_OBJECTS = $(am_graph_OBJECTS)
 graph_DEPENDENCIES = ../lib/libcommon.a ../libplot/libplot.la
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -130,9 +131,10 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/arg.Po ./$(DEPDIR)/file.Po \
-	./$(DEPDIR)/fontlist.Po ./$(DEPDIR)/graph.Po \
-	./$(DEPDIR)/linemode.Po ./$(DEPDIR)/misc.Po \
+am__depfiles_remade = ./$(DEPDIR)/arg.Po ./$(DEPDIR)/axis.Po \
+	./$(DEPDIR)/file.Po ./$(DEPDIR)/fontlist.Po \
+	./$(DEPDIR)/graph.Po ./$(DEPDIR)/linemode.Po \
+	./$(DEPDIR)/misc.Po ./$(DEPDIR)/multigrapher.Po \
 	./$(DEPDIR)/plotter.Po ./$(DEPDIR)/reader.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -319,10 +321,10 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-graph_SOURCES = graph.c misc.c linemode.c reader.c plotter.c fontlist.c arg.c file.c
+graph_SOURCES = graph.c misc.c linemode.c reader.c plotter.c fontlist.c arg.c file.c axis.c multigrapher.c
 graph_LDADD = ../lib/libcommon.a ../libplot/libplot.la
-noinst_HEADERS = extern.h arg.h file.h
-AM_CPPFLAGS = -I$(srcdir)/../include
+noinst_HEADERS = extern.h arg.h file.h plotter.h axis.h multigrapher.h point.h transform.h
+AM_CPPFLAGS = -I$(srcdir)/../include -Wall -Wextra
 CLEANFILES = fontlist.c
 
 # remove executables installed by previous versions of the package, and
@@ -423,11 +425,13 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arg.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/axis.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fontlist.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/graph.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/linemode.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multigrapher.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plotter.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reader.Po@am__quote@ # am--include-marker
 
@@ -592,11 +596,13 @@ clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/arg.Po
+	-rm -f ./$(DEPDIR)/axis.Po
 	-rm -f ./$(DEPDIR)/file.Po
 	-rm -f ./$(DEPDIR)/fontlist.Po
 	-rm -f ./$(DEPDIR)/graph.Po
 	-rm -f ./$(DEPDIR)/linemode.Po
 	-rm -f ./$(DEPDIR)/misc.Po
+	-rm -f ./$(DEPDIR)/multigrapher.Po
 	-rm -f ./$(DEPDIR)/plotter.Po
 	-rm -f ./$(DEPDIR)/reader.Po
 	-rm -f Makefile
@@ -646,11 +652,13 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/arg.Po
+	-rm -f ./$(DEPDIR)/axis.Po
 	-rm -f ./$(DEPDIR)/file.Po
 	-rm -f ./$(DEPDIR)/fontlist.Po
 	-rm -f ./$(DEPDIR)/graph.Po
 	-rm -f ./$(DEPDIR)/linemode.Po
 	-rm -f ./$(DEPDIR)/misc.Po
+	-rm -f ./$(DEPDIR)/multigrapher.Po
 	-rm -f ./$(DEPDIR)/plotter.Po
 	-rm -f ./$(DEPDIR)/reader.Po
 	-rm -f Makefile
