@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 by v66v <74927439\+v66v@users.noreply.github.com> */
+/* Copyright (C) 2024 by v66v <74927439+v66v@users.noreply.github.com> */
 
 /* This file is part of the GNU plotutils package.  Copyright (C) 1989,
    1990, 1991, 1995, 1996, 1997, 1998, 1999, 2000, 2005, 2008, Free

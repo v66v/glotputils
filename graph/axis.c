@@ -1,5 +1,4 @@
-/* Copyright (C) 2024 by v66v <74927439\+v66v@users.noreply.github.com> */
-#pragma once
+/* Copyright (C) 2024 by v66v <74927439+v66v@users.noreply.github.com> */
 #include "axis.h"
 #include "arg.h" // TODO: remove
 

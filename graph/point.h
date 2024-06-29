@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 by v66v <74927439\+v66v@users.noreply.github.com> */
+/* Copyright (C) 2024 by v66v <74927439+v66v@users.noreply.github.com> */
 
 #pragma once
 #include "sys-defines.h"
