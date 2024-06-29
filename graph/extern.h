@@ -19,37 +19,10 @@
    Boston, MA 02110-1301, USA. */
 
 #include "sys-defines.h"
+#include "multigrapher.h"
 #include <stdio.h>
 
 extern const char *progname; /* program name */
-
-/* Definition of the Point structure.  The point-reader (in reader.c)
-   returns a list of these from a specified input stream, and the
-   multigrapher (in plotter.c) interprets them as polyline vertices, and
-   plots the resulting polyline(s).  Each polyline comprises a run of
-   points, each (except the first) connected to the previous point,
-   provided that `pendown' is true.  The final seven fields should be the
-   same for each point in a polyline. */
-
-typedef struct
-{
-  double x, y; /* location of the point in user coordinates */
-  bool have_x_errorbar, have_y_errorbar;
-  double xmin, xmax; /* meaningful only if have_x_errorbar field is set */
-  double ymin, ymax; /* meaningful only if have_y_errorbar field is set */
-  bool pendown;      /* connect to previous point? (if false, polyline ends) */
-  /* following fields are polyline attributes: constant over a polyline */
-  int symbol;         /* either a number indicating which standard marker
-                       symbol is to be plotted at the point (<0 means none)
-                       or an character to be plotted, depending on the value:
-                       0-31: a marker number, or 32-up: a character. */
-  double symbol_size; /* symbol size, as frac. of size of plotting area */
-  const char *symbol_font_name; /* font from which symbols >= 32 are taken */
-  int linemode;         /* linemode of polyline (<0 means no polyline) */
-  double line_width;    /* line width as fraction of size of the display */
-  double fill_fraction; /* in interval [0,1], <0 means polyline isn't filled */
-  bool use_color;       /* color/monochrome interpretation of linemode */
-} Point;
 
 /* type of data in input stream */
 typedef enum
@@ -62,28 +35,6 @@ typedef enum
   T_ASCII_ERRORBAR
 } data_type;
 
-/* style of graph frame; the 1st four of these are increasingly fancy, but
-   the last (AXES_AT_ORIGIN) is an altogether different style */
-typedef enum
-{
-  NO_AXES = 0,
-  AXES = 1,
-  AXES_AND_BOX = 2,
-  AXES_AND_BOX_AND_GRID = 3,
-  AXES_AT_ORIGIN = 4
-} grid_type;
-
-#define NORMAL_AXES(grid_spec)                                                \
-  ((grid_spec == AXES) || (grid_spec == AXES_AND_BOX)                         \
-   || (grid_spec == AXES_AND_BOX_AND_GRID))
-
-/* bit fields in portmanteau variables */
-enum
-{
-  X_AXIS = 0x1,
-  Y_AXIS = 0x2
-};
-
 #define NO_OF_LINEMODES 5     /* see linemode.c */
 #define MAX_COLOR_NAME_LEN 32 /* long enough for all of libplot's colors */
 
@@ -92,8 +43,6 @@ extern const char *linemodes[NO_OF_LINEMODES];
 extern const char *colorstyle[NO_OF_LINEMODES];
 
 /*----------------- prototypes for functions in plotter.h -------------------*/
-
-typedef struct MultigrapherStruct Multigrapher;
 
 extern int delete_multigrapher (Multigrapher *multigrapher);
 
