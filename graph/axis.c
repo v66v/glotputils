@@ -1,6 +1,6 @@
 /* Copyright (C) 2024 by v66v <74927439+v66v@users.noreply.github.com> */
 #include "axis.h"
-#include "arg.h" // TODO: remove
+#include "arg/arg_common.h"
 
 void
 print_tick_label (char *labelbuf, const Axis *axis, const Transform *transform,

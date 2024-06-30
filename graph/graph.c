@@ -21,7 +21,7 @@
  *  Boston, MA 02110-1301, USA.
  */
 
-#include "arg.h"
+#include "arg/arg.h"
 #include "file.h"
 #include "fontlist.h"
 #include "libcommon.h"

@@ -2,9 +2,9 @@
 
 bin_PROGRAMS = graph
 
-graph_SOURCES = graph.c misc.c linemode.c reader.c plotter.c fontlist.c arg.c file.c axis.c multigrapher.c
+graph_SOURCES = graph.c misc.c linemode.c reader.c graph_plotter.c fontlist.c arg/arg.c arg/arg_common.c arg/arg_parse.c file.c axis.c multigrapher.c
 graph_LDADD = ../lib/libcommon.a ../libplot/libplot.la
-noinst_HEADERS = extern.h arg.h file.h plotter.h axis.h multigrapher.h point.h transform.h
+noinst_HEADERS = extern.h arg/arg.h arg/arg_common.h arg/arg_parse.h file.h graph_plotter.h axis.h multigrapher.h point.h transform.h
 
 AM_CPPFLAGS = -I$(srcdir)/../include -Wall -Wextra
 

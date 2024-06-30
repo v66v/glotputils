@@ -6,9 +6,7 @@
 #define ARG_REQUIRED 1
 #define ARG_OPTIONAL 2
 
-extern const char *optstring; /* initial hyphen requests no reordering
-                               */
-
+extern const char *optstring;
 extern struct option long_options[];
 
 /* null-terminated list of options, such as obsolete-but-still-maintained
@@ -174,7 +172,3 @@ typedef struct
 } ARG_LIST;
 
 extern ARG_LIST arg_list;
-
-int parse_args (int argc, char *argv[]);
-int show_args ();
-bool parse_pen_string (const char *pen_s);
