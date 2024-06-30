@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 by v66v <74927439\+v66v@users.noreply.github.com> */
+/* Copyright (C) 2024 by v66v <74927439+v66v@users.noreply.github.com> */
 
 #pragma once
 #include "axis.h"
@@ -23,7 +23,7 @@
    the Free Software Foundation, Inc., 51 Franklin St., Fifth Floor,
    Boston, MA 02110-1301, USA. */
 
-#include "arg.h" // TODO: remove
+#include "arg/arg.h" // TODO: remove
 #include "extern.h"
 #include "libcommon.h"
 #include "axis.h"

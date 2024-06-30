@@ -25,17 +25,20 @@
 #include "file.h"
 #include "fontlist.h"
 #include "libcommon.h"
-#include "plotter.h"
+#include "graph_plotter.h"
 #include "sys-defines.h"
 
 int
 main (int argc, char *argv[])
 {
-  if ((parse_args (argc, argv) == EXIT_FAILURE))
-    return EXIT_FAILURE;
+  {
+    int ret;
+    if ((ret = parse_args (argc, argv)) < 2)
+      return ret;
 
-  if (show_args () == EXIT_FAILURE)
-    return EXIT_FAILURE;
+    if ((ret = print_arg_info ()) < 2)
+      return ret;
+  }
 
   /* End of command-line parse.  At this point, we need to terminate the
      graph currently in progress, if it's nonempty (i.e. if one or more

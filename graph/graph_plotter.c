@@ -1,4 +1,4 @@
-#include "plotter.h"
+#include "graph_plotter.h"
 
 /* The following routines [new_multigrapher(), begin_graph(),
  * set_graph_parameters(), draw_frame_of_graph(), plot_point(),
