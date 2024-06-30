@@ -5,7 +5,7 @@
 AC_INIT([GNU plotutils],[2.6],[bug-plotutils@gnu.org])
 AC_PREREQ(2.59)
 AC_CONFIG_SRCDIR(graph/graph.c)
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([subdir-objects])
 AM_CONFIG_HEADER(config.h:config.hin)
 
 LT_INIT
