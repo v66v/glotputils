@@ -106,9 +106,11 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
+am__dirstamp = $(am__leading_dot)dirstamp
 am_graph_OBJECTS = graph.$(OBJEXT) misc.$(OBJEXT) linemode.$(OBJEXT) \
-	reader.$(OBJEXT) plotter.$(OBJEXT) fontlist.$(OBJEXT) \
-	arg.$(OBJEXT) file.$(OBJEXT) axis.$(OBJEXT) \
+	reader.$(OBJEXT) graph_plotter.$(OBJEXT) fontlist.$(OBJEXT) \
+	arg/arg.$(OBJEXT) arg/arg_common.$(OBJEXT) \
+	arg/arg_parse.$(OBJEXT) file.$(OBJEXT) axis.$(OBJEXT) \
 	multigrapher.$(OBJEXT)
 graph_OBJECTS = $(am_graph_OBJECTS)
 graph_DEPENDENCIES = ../lib/libcommon.a ../libplot/libplot.la
@@ -131,11 +133,12 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/arg.Po ./$(DEPDIR)/axis.Po \
-	./$(DEPDIR)/file.Po ./$(DEPDIR)/fontlist.Po \
-	./$(DEPDIR)/graph.Po ./$(DEPDIR)/linemode.Po \
+am__depfiles_remade = ./$(DEPDIR)/axis.Po ./$(DEPDIR)/file.Po \
+	./$(DEPDIR)/fontlist.Po ./$(DEPDIR)/graph.Po \
+	./$(DEPDIR)/graph_plotter.Po ./$(DEPDIR)/linemode.Po \
 	./$(DEPDIR)/misc.Po ./$(DEPDIR)/multigrapher.Po \
-	./$(DEPDIR)/plotter.Po ./$(DEPDIR)/reader.Po
+	./$(DEPDIR)/reader.Po arg/$(DEPDIR)/arg.Po \
+	arg/$(DEPDIR)/arg_common.Po arg/$(DEPDIR)/arg_parse.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -321,9 +324,9 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-graph_SOURCES = graph.c misc.c linemode.c reader.c plotter.c fontlist.c arg.c file.c axis.c multigrapher.c
+graph_SOURCES = graph.c misc.c linemode.c reader.c graph_plotter.c fontlist.c arg/arg.c arg/arg_common.c arg/arg_parse.c file.c axis.c multigrapher.c
 graph_LDADD = ../lib/libcommon.a ../libplot/libplot.la
-noinst_HEADERS = extern.h arg.h file.h plotter.h axis.h multigrapher.h point.h transform.h
+noinst_HEADERS = extern.h arg/arg.h arg/arg_common.h arg/arg_parse.h file.h graph_plotter.h axis.h multigrapher.h point.h transform.h
 AM_CPPFLAGS = -I$(srcdir)/../include -Wall -Wextra
 CLEANFILES = fontlist.c
 
@@ -413,6 +416,17 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+arg/$(am__dirstamp):
+	@$(MKDIR_P) arg
+	@: > arg/$(am__dirstamp)
+arg/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) arg/$(DEPDIR)
+	@: > arg/$(DEPDIR)/$(am__dirstamp)
+arg/arg.$(OBJEXT): arg/$(am__dirstamp) arg/$(DEPDIR)/$(am__dirstamp)
+arg/arg_common.$(OBJEXT): arg/$(am__dirstamp) \
+	arg/$(DEPDIR)/$(am__dirstamp)
+arg/arg_parse.$(OBJEXT): arg/$(am__dirstamp) \
+	arg/$(DEPDIR)/$(am__dirstamp)
 
 graph$(EXEEXT): $(graph_OBJECTS) $(graph_DEPENDENCIES) $(EXTRA_graph_DEPENDENCIES) 
 	@rm -f graph$(EXEEXT)
@@ -420,20 +434,23 @@ graph$(EXEEXT): $(graph_OBJECTS) $(graph_DEPENDENCIES) $(EXTRA_graph_DEPENDENCIE
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f arg/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/axis.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fontlist.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/graph.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/graph_plotter.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/linemode.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multigrapher.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plotter.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reader.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@arg/$(DEPDIR)/arg.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@arg/$(DEPDIR)/arg_common.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@arg/$(DEPDIR)/arg_parse.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -442,22 +459,25 @@ $(am__depfiles_remade):
 am--depfiles: $(am__depfiles_remade)
 
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
@@ -586,6 +606,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f arg/$(DEPDIR)/$(am__dirstamp)
+	-rm -f arg/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -595,16 +617,18 @@ clean: clean-am
 clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/arg.Po
-	-rm -f ./$(DEPDIR)/axis.Po
+		-rm -f ./$(DEPDIR)/axis.Po
 	-rm -f ./$(DEPDIR)/file.Po
 	-rm -f ./$(DEPDIR)/fontlist.Po
 	-rm -f ./$(DEPDIR)/graph.Po
+	-rm -f ./$(DEPDIR)/graph_plotter.Po
 	-rm -f ./$(DEPDIR)/linemode.Po
 	-rm -f ./$(DEPDIR)/misc.Po
 	-rm -f ./$(DEPDIR)/multigrapher.Po
-	-rm -f ./$(DEPDIR)/plotter.Po
 	-rm -f ./$(DEPDIR)/reader.Po
+	-rm -f arg/$(DEPDIR)/arg.Po
+	-rm -f arg/$(DEPDIR)/arg_common.Po
+	-rm -f arg/$(DEPDIR)/arg_parse.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -651,16 +675,18 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/arg.Po
-	-rm -f ./$(DEPDIR)/axis.Po
+		-rm -f ./$(DEPDIR)/axis.Po
 	-rm -f ./$(DEPDIR)/file.Po
 	-rm -f ./$(DEPDIR)/fontlist.Po
 	-rm -f ./$(DEPDIR)/graph.Po
+	-rm -f ./$(DEPDIR)/graph_plotter.Po
 	-rm -f ./$(DEPDIR)/linemode.Po
 	-rm -f ./$(DEPDIR)/misc.Po
 	-rm -f ./$(DEPDIR)/multigrapher.Po
-	-rm -f ./$(DEPDIR)/plotter.Po
 	-rm -f ./$(DEPDIR)/reader.Po
+	-rm -f arg/$(DEPDIR)/arg.Po
+	-rm -f arg/$(DEPDIR)/arg_common.Po
+	-rm -f arg/$(DEPDIR)/arg_parse.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
