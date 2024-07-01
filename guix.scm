@@ -3,6 +3,7 @@
              (guix git-download)
              (gnu packages)
              (gnu packages commencement)
+             (gnu packages texinfo)
              (gnu packages autotools)
 			 (gnu packages xorg)
 			 (gnu packages image)
@@ -52,7 +53,7 @@
 											  (substitute* "test/plot2svg.test"
 														   (("^exit .*") "exit 77")))))
                #~%standard-phases)))
-    (inputs (list libpng libx11 libxt libxaw gcc-toolchain automake autoconf libtool))
+    (inputs (list libpng libx11 libxt libxaw gcc-toolchain automake autoconf libtool texinfo))
     (home-page "https://github.com/v66v/glotputils")
     (synopsis "Plotting utilities and library")
     (description
